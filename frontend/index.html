@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EHR Blockchain System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
+    <style>
+        body { font-family: 'Space Grotesk', sans-serif; background-color: #0f172a; color: #fff; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; }
+        .hidden { display: none; }
+        
+        /* Animations */
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+        .block-animate { animation: slideIn 0.4s ease-out forwards; }
+        .mining-dots span { animation: bounce 0.6s infinite alternate; }
+        .mining-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .mining-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce { to { transform: translateY(-4px); opacity: 0.5; } }
+        .hidden-view { display: none; opacity: 0; transform: translateY(20px); }
+        .active-view { display: block; opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+<body class="p-6">
+
+    <!-- ADDED NAVBAR -->
+    <nav class="flex justify-between items-center mb-8 glass p-4">
+        <div class="flex items-center gap-2">
+            <h1 class="text-2xl font-bold text-blue-400">MedChain</h1>
+            <span class="text-xs text-slate-400 border border-slate-600 px-2 py-0.5 rounded-full">Secure Ledger v2.5</span>
+        </div>
+        <div class="hidden md:flex gap-6 text-sm font-medium">
+            <a href="#" class="text-slate-300 hover:text-white transition">Patient Portal</a>
+            <a href="#" class="text-slate-300 hover:text-white transition">Doctor Portal</a>
+        </div>
+        <button id="connectWalletBtn" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2">
+            <i data-lucide="wallet" class="w-4 h-4"></i>
+            <span id="walletAddressDisplay">Connect Wallet</span>
+        </button>
+    </nav>
+
+    <div class="max-w-4xl mx-auto">
+        <!-- AUTH SECTION -->
+        <div id="authSection" class="glass p-8 max-w-md mx-auto block-animate">
+            
+            <!-- Login -->
+            <div id="loginForm">
+                <div class="text-center mb-6">
+                    <h2 class="text-3xl font-bold mb-2">Login</h2>
+                    <p class="text-slate-400 text-sm">Access your secure medical records</p>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs uppercase text-slate-500 font-bold mb-2">User Identification</label>
+                        <input id="loginId" type="text" placeholder="Enter User ID (e.g. P1001)" class="w-full p-3 rounded bg-slate-800 border border-slate-600 text-white focus:border-blue-500 focus:outline-none transition">
+                    </div>
+                    
+                    <button onclick="login()" class="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded font-bold transition flex justify-center items-center gap-2">
+                        <span>Login</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <div class="mt-6 text-center border-t border-slate-700 pt-4">
+                    <p class="text-sm text-slate-400">Don't have an ID?</p>
+                    <button class="text-blue-400 hover:text-blue-300 text-sm font-semibold mt-1" onclick="toggleAuth('register')">Register New Account</button>
+                </div>
+            </div>
+
+            <!-- Register -->
+            <div id="registerForm" class="hidden">
+                 <div class="text-center mb-6">
+                    <h2 class="text-3xl font-bold mb-2">Create Account</h2>
+                    <p class="text-slate-400 text-sm">Join the secure medical network</p>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs uppercase text-slate-500 font-bold mb-2">I am a</label>
+                        <select id="regRole" class="w-full p-3 rounded bg-slate-800 border border-slate-600 text-white focus:border-green-500 focus:outline-none transition" onchange="toggleRegFields()">
+                            <option value="Patient">Patient</option>
+                            <option value="Doctor">Doctor</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs uppercase text-slate-500 font-bold mb-2">Full Name</label>
+                        <input id="regName" type="text" placeholder="John Doe" class="w-full p-3 rounded bg-slate-800 border border-slate-600 text-white focus:border-green-500 focus:outline-none">
+                    </div>
+                    
+                    <!-- Patient Fields -->
+                    <div id="patientFields" class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs uppercase text-slate-500 font-bold mb-2">Age</label>
+                                <input id="regAge" type="number" placeholder="25" class="w-full p-3 rounded bg-slate-800 border border-slate-600 text-white focus:border-green-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs uppercase text-slate-500 font-bold mb-2">Gender</label>
+                                <select id="regGender" class="w-full p-3 rounded bg-slate-800 border border-slate-600 text-white focus:border-green-500 focus:outline-none">
+                                    <option value="">Select</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                </select>
+                            </div>
+                        </div>
+                         <div>
+                            <label class="block text-xs uppercase text-slate-500 font-bold mb-2">Blood Group</label>
+                            <input id="regBlood" type="text" placeholder="O+" class="w-full p-3 rounded bg-slate-800 border border-slate-600 text-white focus:border-green-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Doctor Fields -->
+                    <div id="doctorFields" class="hidden">
+                         <div>
+                            <label class="block text-xs uppercase text-slate-500 font-bold mb-2">Specialization</label>
+                            <input id="regSpec" type="text" placeholder="Cardiologist" class="w-full p-3 rounded bg-slate-800 border border-slate-600 text-white focus:border-green-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <button onclick="register()" class="w-full py-3 bg-green-600 hover:bg-green-500 rounded font-bold transition flex justify-center items-center gap-2 mt-2">
+                        <span>Register Now</span>
+                        <i data-lucide="check-circle" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <div class="mt-6 text-center border-t border-slate-700 pt-4">
+                    <p class="text-sm text-slate-400">Already registered?</p>
+                    <button class="text-blue-400 hover:text-blue-300 text-sm font-semibold mt-1" onclick="toggleAuth('login')">Login to Account</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- DASHBOARD -->
+        <div id="dashboard" class="hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="userName" class="text-2xl text-white">Welcome, User</h2>
+                <button onclick="logout()" class="px-4 py-2 bg-red-600 hover:bg-red-500 rounded">Logout</button>
+            </div>
+
+            <!-- DOCTOR VIEW -->
+            <div id="doctorView" class="hidden space-y-6">
+                
+                <!-- Add Record -->
+                <div class="glass p-6">
+                    <h3 class="text-xl font-bold mb-4 text-green-400">📝 Add Medical Record</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input id="recPatientId" placeholder="Patient ID (P1001)" class="p-3 bg-slate-800 rounded border border-slate-600">
+                        <input id="recDisease" placeholder="Disease / Diagnosis" class="p-3 bg-slate-800 rounded border border-slate-600">
+                        <input id="recReason" placeholder="Reason" class="p-3 bg-slate-800 rounded border border-slate-600">
+                        <input id="recMedicines" placeholder="Medicines" class="p-3 bg-slate-800 rounded border border-slate-600">
+                    </div>
+                    <textarea id="recPrecautions" placeholder="Precautions" class="w-full mt-4 p-3 bg-slate-800 rounded border border-slate-600"></textarea>
+                    <button onclick="addRecord()" class="mt-4 w-full py-3 bg-green-600 font-bold rounded">Add Record to Blockchain</button>
+                </div>
+
+                <!-- Fetch Records -->
+                <div class="glass p-6">
+                    <h3 class="text-xl font-bold mb-4 text-blue-400">🔍 Search Patient Records</h3>
+                    <div class="flex gap-4">
+                        <input id="searchPatientId" placeholder="Enter Patient ID (P1001)" class="flex-1 p-3 bg-slate-800 rounded border border-slate-600">
+                        <button onclick="fetchRecords()" class="px-6 py-3 bg-blue-600 rounded font-bold">Fetch</button>
+                    </div>
+                    <div id="recordResults" class="mt-4 space-y-4"></div>
+                </div>
+            </div>
+
+            <!-- PATIENT VIEW -->
+            <div id="patientView" class="hidden space-y-6">
+                
+                <!-- My Records -->
+                <div class="glass p-6">
+                    <h3 class="text-xl font-bold mb-4 text-blue-400">📂 My Medical History</h3>
+                    <button onclick="fetchMyRecords()" class="mb-4 px-4 py-2 bg-blue-600 rounded">Refresh Records</button>
+                    <div id="myRecordsList" class="space-y-4"></div>
+                </div>
+
+                <!-- Access Requests -->
+                <div class="glass p-6">
+                    <h3 class="text-xl font-bold mb-4 text-yellow-400">🔔 Access Requests</h3>
+                    <button onclick="checkRequests()" class="mb-4 text-sm underline text-gray-400">Check for new requests</button>
+                    <div id="requestList" class="space-y-4"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
+    <script src="blockchain.js"></script> 
+    <script src="app.js" defer></script>
+</body>
+</html>
